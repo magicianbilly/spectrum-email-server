@@ -4,37 +4,48 @@ const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
+
+// Homepage route
+app.get('/', (req, res) => {
+  res.send('✅ Spectrum Email Server is Live!');
+});
+
+// Middleware
 app.use(cors());
 app.use(express.json());
 
+// Email sending route
 app.post('/send-email', async (req, res) => {
   const { subject, message } = req.body;
 
   const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // use SSL
     auth: {
-      user: process.env.EMAIL_FROM,
-      pass: process.env.EMAIL_PASS
-    }
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
   });
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM,
-    to: process.env.EMAIL_TO,
-    subject,
-    text: message
+    from: process.env.EMAIL_USER,
+    to: process.env.TO_EMAIL,
+    subject: subject,
+    text: message,
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    res.status(200).send('Email sent');
+    const info = await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: '✅ Email sent successfully', info });
   } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).send('Error sending email');
+    console.error('❌ Error sending email:', error);
+    res.status(500).json({ message: '❌ Failed to send email', error });
   }
 });
 
-const PORT = 3000;
+// Listen on port from environment or default to 3000
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
